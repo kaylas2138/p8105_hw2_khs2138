@@ -226,7 +226,7 @@ Age at onset is converted to numeric, as it is stored as a character. Sex is con
 * **APOE4 Carrier Status** Of recruited participants, `r (nrow(filter(mci_baseline_all, apoe4 == "carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are carriers and `r (nrow(filter(mci_baseline_all, apoe4 == "non_carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are not carriers
 
 ## Biomarker data 
-```{r load_mci_biomarker}
+```{r load_mci_biomarker, warning = FALSE}
 mci_amyloid =
   read_csv('./data/data_mci/mci_amyloid.csv', skip = 1) |>
   janitor::clean_names() |>
@@ -235,7 +235,7 @@ mci_amyloid =
   mutate(time_4 = as.numeric(time_4)) |>
   mutate(time_6 = as.numeric(time_6)) |>
   mutate(time_8 = as.numeric(time_8))
-skimr::skim(mci_amyloid)
+#skimr::skim(mci_amyloid)
 ```
 
 The dataset details the ratio of amyloid beta in participants observed at baseline and 4 follow-up time points. The average ratio is `r filter(mci_amyloid, baseline > 0) |> pull(baseline) |> mean() |> round(2)` at baseline, `r filter(mci_amyloid, time_2 > 0) |> pull(time_2) |> mean() |> round(2)` at two years, `r filter(mci_amyloid, time_4 > 0) |> pull(time_4) |> mean() |> round(2)` at four years, `r filter(mci_amyloid, time_6 > 0) |> pull(time_6) |> mean() |> round(2)` at six years, `r filter(mci_amyloid, time_8 > 0) |> pull(time_8) |> mean() |> round(2)` at eight years. 
@@ -243,10 +243,39 @@ The dataset details the ratio of amyloid beta in participants observed at baseli
 There are `r sum(is.na(mci_amyloid$baseline))` baseline values missing, `r sum(is.na(mci_amyloid$time_2))` year 2 values missing, `r sum(is.na(mci_amyloid$time_4))` year 4 values missing,`r sum(is.na(mci_amyloid$time_6))` year 6 values missing, and `r sum(is.na(mci_amyloid$time_8))` year 8 values missing. 
 
 
-
-
 ## Participant overlap
 
+### Exploring patients only in one dataset 
 Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+
+```{r mci_overlap}
+mci_baseline_all = mci_baseline_all |> mutate(name = "baseline")
+mci_amyloid = 
+  mci_amyloid |> 
+  mutate(name = "amyloid") |> 
+  rename(id = study_id)
+
+mci_all =
+  full_join(mci_baseline_all, mci_amyloid, by = "id")
+#mci_all
+#skimr::skim(mci_all)
+```
+
+
+`r nrow(mci_baseline_all)` participants were recruited, `r nrow(mci_baseline)` were eligible for inclusion. `r nrow(mci_amyloid)` have biomarker data recorded. There are `r mci_all |> filter(is.na(name.x), !is.na(name.y)) |> nrow()` patients with no baseline demographics but with biomarker data. There are `r mci_all |> filter(!is.na(name.x), is.na(name.y)) |> nrow()` patients with  baseline demographics but no biomarker data. Presumably study recruitment and retention is challenging, and so I would expect biomarker data to be missing as it requires follow-up. However, it the inverse (that there are participants with biomarker missing baseline demographics)
+is more surprising. 
+
+### Generating CSV of Overlap
+```{r overlap_to_csv}
+mci_overlap =
+  inner_join(mci_baseline_all, mci_amyloid, by = "id") |> 
+  select(-name.x, -name.y)
+#mci_overlap
+#skimr::skim(mci_overlap)
+
+write_csv(mci_overlap, "./data/data_mci/mci_overlap.csv")
+```
+
+There are a total of `r nrow(mci_overlap)` patients with both baseline and biomarker data. They have an average age at enrollment of `r mci_overlap |> pull(current_age) |> mean()|> round(2)`. There are `r mci_overlap |> filter(!is.na(age_at_onset)) |> nrow() ` of these patients who develop MCI. 
 
 
