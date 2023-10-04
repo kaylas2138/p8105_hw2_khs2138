@@ -72,7 +72,7 @@ unemployment
 ## Merge all data
 Required casting year in unemployment to character
 
-```{r merge}
+```{r merge_538}
 data = 
   left_join(pols_month, snp) |>
   left_join(x = _, y = unemployment)
@@ -87,6 +87,8 @@ The resulting dataset has `r nrow(data)` rows and `r ncol(data)` columns.
 
 
 # Problem 2 
+
+## Load and Clean Data
 Read and clean the Mr. Trash Wheel sheet:
 
 * specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
@@ -95,7 +97,7 @@ Read and clean the Mr. Trash Wheel sheet:
 
 * The last row contains sums of the previous so should be excluded. This is the only row where date is missing, so excluding it by filtering out where Month is null. 
 
-```{r}
+```{r load_trashwheel}
 trashwheel_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
                              sheet = "Mr. Trash Wheel",
                              skip = 1,
@@ -103,8 +105,30 @@ trashwheel_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
   filter(!is.na(Month)) |> 
   janitor::clean_names()
 skimr::skim(trashwheel_data)
+
+trashwheel_data
 ```
 
+## Calculate homes_powered
+
+The data include a column for the (approximate) number of homes powered. This calculation is described in the `Homes powered note`, but not applied to every row in the dataset. Update the data to include a new `homes_powered` variable based on this calculation.
+
+* From excel: Homes Powered - Each ton of trash equates to on average 500 kilowatts of electricity. An average household will use 30 kilowatts per day.
+
+```{r homes_powered}
+kw_per_ton = 500
+kw_per_house = 30
+trashwheel_data = trashwheel_data |>
+  rename(homes_powered_orig = homes_powered) |>
+  mutate(homes_powered = (weight_tons * kw_per_ton / kw_per_house))
+```
+
+*Checking* to see if the calculation looks similar to the original `homes` column. Using only where the homes_powered from original dataset was  calculated, the average number of homes powered is `r trashwheel_data |> filter(homes_powered_orig > 0) |> pull(homes_powered_orig) |> mean() |> round(2)` compared to our calculation, `r pull(trashwheel_data, homes_powered) |> mean() |> round(2)`. These are fairly equivalent. 
+
+## Remaining
+Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+
+Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
 
 
 
