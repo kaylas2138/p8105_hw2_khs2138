@@ -33,7 +33,7 @@ pols_month =
   mutate(president = recode(prez_dem, "1" = "dem", "0" = "gop")) |>
   select(-prez_dem,-prez_gop, - day)
   
-head(pols_month)
+#head(pols_month)
 ```
 
 
@@ -49,7 +49,7 @@ snp =
   mutate(year = if_else(year > 15, paste0("19",year), paste0("20",year))) |> 
   #arrange(year, month) |>
   select(year,month,close)
-tail(snp)
+#tail(snp)
 ```
 
 
@@ -66,7 +66,7 @@ unemployment =
   janitor::clean_names() |>
   mutate(month = month.name[match(month, month.abb)]) |> # Jan -> January 
   mutate(year = as.character(year))
-unemployment
+#unemployment
 ```
 
 ## Merge all data
@@ -108,7 +108,7 @@ mr_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
   mutate(year = as.numeric(year))
 #skimr::skim(mr_data)
 
-mr_data
+#mr_data
 ```
 
 ## Calculate homes_powered
@@ -145,7 +145,7 @@ prof_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
   mutate(name = "professor_trash_wheel")
 #skimr::skim(prof_data)
 
-prof_data
+#prof_data
 
 ```
 
@@ -162,7 +162,7 @@ gwyn_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
   mutate(homes_powered = (weight_tons * kw_per_ton / kw_per_house)) |> 
   mutate(name = "gwynnda_trash_wheel")
 #skimr::skim(gwyn_data)
-gwyn_data
+#gwyn_data
 ```
 
 
@@ -172,8 +172,8 @@ trash_tidy =
   bind_rows(mr_data, prof_data, gwyn_data) |>
   select(name, everything(), -homes_powered_orig)
 
-head(trash_tidy)
-unique(trash_tidy$name)
+#head(trash_tidy)
+#unique(trash_tidy$name)
 ```
 
 
@@ -193,4 +193,34 @@ There are `r nrow(mr_data)` observations from Mr. Trash Wheel, `r nrow(prof_data
 * The total number of cigarette butts collected by Gwynnda in July 2021 is `r trash_tidy |> filter(name == "gwynnda_trash_wheel", month == "July", year == 2021) |> pull(cigarette_butts) |> sum()`
 
 
+# Problem 3
 
+## Baseline Demographics
+
+Import, clean, and tidy the dataset of baseline demographics. 
+* Ensure that sex and APOE4 carrier status are appropriate encoded (i.e. not numeric)
+* Remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline).
+
+```{r load_mci, warning = FALSE}
+mci_baseline_all =
+  read_csv('./data/data_mci/MCI_baseline.csv', skip = 1) |>
+  janitor::clean_names() |>
+  mutate(age_at_onset = as.numeric(age_at_onset)) |> 
+  mutate(sex = recode(sex, "0" = "Female", "1" = "Male")) |>
+  mutate(sex = as.factor(sex)) |>
+  mutate(apoe4 = recode(apoe4, "0" = "non_carrier", "1" = "carrier")) |>
+  mutate(apoe4 = as.factor(apoe4))
+
+mci_baseline = mci_baseline_all |>
+  filter(!is.na(age_at_onset))
+
+#skimr::skim(mci_baseline)
+#head(mci_baseline)
+```
+
+Age at onset is converted to numeric, as it is stored as a character. Sex is converted from binary to a factor, following the specification in the file that "1 = Male, 0 = Female". The same is done for APOE-4 carrier, following that "1 = APOE4 carrier, 0 = APOE4 non-carrier". Given that anyone who doesn't develop MCI will not have age_at_onset, we exclude individuals for whom that value is null to filter to participants who meet inclusion crtieria. 
+
+* **Recruietment:** A total of `r nrow(mci_baseline_all)` participants were recruited, of which `r nrow(mci_baseline)` (`r (nrow(mci_baseline)/nrow(mci_baseline_all) * 100) |> round(2)`%) develop MCI. 
+* **Age:** The average age at enrollment of recruited participants is `r mci_baseline_all |> pull(current_age) |> mean() |> round(2)` and of eligible participants is `r mci_baseline |> pull(current_age) |> mean() |> round(2)`. The average age at onset is `r mci_baseline |> pull(age_at_onset) |> mean() |> round(2)`
+* **Gender** Of recruited participants, `r (nrow(filter(mci_baseline_all, sex == "Male"))/nrow(mci_baseline_all)*100) |> round(2)`% are male and `r (nrow(filter(mci_baseline_all, sex == "Female"))/nrow(mci_baseline_all)*100) |> round(2)`% are female. 
+* **APOE4 Carrier Status** Of recruited participants, `r (nrow(filter(mci_baseline_all, apoe4 == "carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are carriers and `r (nrow(filter(mci_baseline_all, apoe4 == "non_carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are not carriers
