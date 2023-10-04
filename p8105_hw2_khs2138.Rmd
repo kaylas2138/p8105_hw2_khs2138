@@ -13,6 +13,7 @@ knitr::opts_chunk$set(message = FALSE)
 
 ```{r libraries}
 library(tidyverse)
+library(readxl)
 ```
 
 # Problem 1 
@@ -75,9 +76,6 @@ Required casting year in unemployment to character
 data = 
   left_join(pols_month, snp) |>
   left_join(x = _, y = unemployment)
-
-str(data)
-skimr::skim(data)
 ```
 
 The resulting dataset has `r nrow(data)` rows and `r ncol(data)` columns. 
@@ -86,5 +84,27 @@ The resulting dataset has `r nrow(data)` rows and `r ncol(data)` columns.
 * SNP has `r nrow(snp)`, with data from `r min(snp$year)` to `r max(snp$year)`. Average close price for these years is `r filter(snp, close >= 0) |> pull(close) |> mean()`
 * Unemployment has unemployment rates from `r min(unemployment$year)` to `r max(unemployment$year)`. Average unemployment for these years is `r filter(unemployment, percentage >= 0) |> pull(percentage) |> mean()`
 * Because the years don't overlap exactly, we'll miss some data for certain years - hence the "NAs" in the merged dataset - 36 values are missing SNP close price `close`, and 12 are missing unemployment rates `percentage`.
+
+
+# Problem 2 
+Read and clean the Mr. Trash Wheel sheet:
+
+* specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+* use reasonable variable names
+* omit rows that do not include dumpster-specific data
+
+* The last row contains sums of the previous so should be excluded. This is the only row where date is missing, so excluding it by filtering out where Month is null. 
+
+```{r}
+trashwheel_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
+                             sheet = "Mr. Trash Wheel",
+                             skip = 1,
+                             range = cell_cols("A:N")) |>
+  filter(!is.na(Month)) |> 
+  janitor::clean_names()
+skimr::skim(trashwheel_data)
+```
+
+
 
 
