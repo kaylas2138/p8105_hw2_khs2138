@@ -224,3 +224,29 @@ Age at onset is converted to numeric, as it is stored as a character. Sex is con
 * **Age:** The average age at enrollment of recruited participants is `r mci_baseline_all |> pull(current_age) |> mean() |> round(2)` and of eligible participants is `r mci_baseline |> pull(current_age) |> mean() |> round(2)`. The average age at onset is `r mci_baseline |> pull(age_at_onset) |> mean() |> round(2)`
 * **Gender** Of recruited participants, `r (nrow(filter(mci_baseline_all, sex == "Male"))/nrow(mci_baseline_all)*100) |> round(2)`% are male and `r (nrow(filter(mci_baseline_all, sex == "Female"))/nrow(mci_baseline_all)*100) |> round(2)`% are female. 
 * **APOE4 Carrier Status** Of recruited participants, `r (nrow(filter(mci_baseline_all, apoe4 == "carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are carriers and `r (nrow(filter(mci_baseline_all, apoe4 == "non_carrier"))/nrow(mci_baseline_all)*100) |> round(2)`% are not carriers
+
+## Biomarker data 
+```{r load_mci_biomarker}
+mci_amyloid =
+  read_csv('./data/data_mci/mci_amyloid.csv', skip = 1) |>
+  janitor::clean_names() |>
+  mutate(baseline = as.numeric(baseline)) |>  
+  mutate(time_2 = as.numeric(time_2)) |>
+  mutate(time_4 = as.numeric(time_4)) |>
+  mutate(time_6 = as.numeric(time_6)) |>
+  mutate(time_8 = as.numeric(time_8))
+skimr::skim(mci_amyloid)
+```
+
+The dataset details the ratio of amyloid beta in participants observed at baseline and 4 follow-up time points. The average ratio is `r filter(mci_amyloid, baseline > 0) |> pull(baseline) |> mean() |> round(2)` at baseline, `r filter(mci_amyloid, time_2 > 0) |> pull(time_2) |> mean() |> round(2)` at two years, `r filter(mci_amyloid, time_4 > 0) |> pull(time_4) |> mean() |> round(2)` at four years, `r filter(mci_amyloid, time_6 > 0) |> pull(time_6) |> mean() |> round(2)` at six years, `r filter(mci_amyloid, time_8 > 0) |> pull(time_8) |> mean() |> round(2)` at eight years. 
+
+There are `r sum(is.na(mci_amyloid$baseline))` baseline values missing, `r sum(is.na(mci_amyloid$time_2))` year 2 values missing, `r sum(is.na(mci_amyloid$time_4))` year 4 values missing,`r sum(is.na(mci_amyloid$time_6))` year 6 values missing, and `r sum(is.na(mci_amyloid$time_8))` year 8 values missing. 
+
+
+
+
+## Participant overlap
+
+Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+
+
