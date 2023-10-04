@@ -52,7 +52,39 @@ tail(snp)
 ```
 
 
-## Unemployment
+## Clean Unemployment
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+
+
+```{r clean_unemployment}
+unemployment =
+  read_csv('./data/fivethirtyeight_datasets/unemployment.csv') |> 
+  pivot_longer(Jan:Dec,
+               names_to = "month",
+               values_to = "percentage") |>
+  janitor::clean_names() |>
+  mutate(month = month.name[match(month, month.abb)]) |> # Jan -> January 
+  mutate(year = as.character(year))
+unemployment
+```
+
+## Merge all data
+Required casting year in unemployment to character
+
+```{r merge}
+data = 
+  left_join(pols_month, snp) |>
+  left_join(x = _, y = unemployment)
+
+str(data)
+skimr::skim(data)
+```
+
+The resulting dataset has `r nrow(data)` rows and `r ncol(data)` columns. 
+
+* Pols_month has  `r nrow(pols_month)` rows, and we created `president` which tells us if the president was a gop/dem in a given year. This column was created from a combination of `prez_gop` and `prez_dem`, which I tested to make sure are truly mutually exclusive. Years include `r min(pols_month$year)` to `r max(pols_month$year)`
+* SNP has `r nrow(snp)`, with data from `r min(snp$year)` to `r max(snp$year)`. Average close price for these years is `r filter(snp, close >= 0) |> pull(close) |> mean()`
+* Unemployment has unemployment rates from `r min(unemployment$year)` to `r max(unemployment$year)`. Average unemployment for these years is `r filter(unemployment, percentage >= 0) |> pull(percentage) |> mean()`
+* Because the years don't overlap exactly, we'll miss some data for certain years - hence the "NAs" in the merged dataset - 36 values are missing SNP close price `close`, and 12 are missing unemployment rates `percentage`.
 
 
