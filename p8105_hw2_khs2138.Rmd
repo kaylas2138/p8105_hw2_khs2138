@@ -133,8 +133,6 @@ Use a similar process to import, clean, and organize the data for Professor Tras
 
 ### Load and Clean Professor Trash Wheel
 
-* Professor Trash Wheel doesn't have `sports` column
-* Professor Trash Wheel has one row missing many of the variables
 
 ```{r professor}
 prof_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
@@ -153,9 +151,7 @@ prof_data
 
 ### Load and Clean Gwynnda Trash Wheel
 
-* Gwynndata is missing `sports` and `glass_bottles`
-* `wrappers` values are missing for many of the rows
-* Noting also that one dumpster number is listed twice with different data (#21)
+
 ```{r gwynnda}
 gwyn_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
                              sheet = "Gwynnda Trash Wheel",
@@ -172,20 +168,29 @@ gwyn_data
 
 ### Combine Data Sets
 ```{r bind_trash}
-
-
 trash_tidy = 
   bind_rows(mr_data, prof_data, gwyn_data) |>
-  select(name, everything())
+  select(name, everything(), -homes_powered_orig)
+
 head(trash_tidy)
 unique(trash_tidy$name)
 ```
 
 
+## Summary of Data 
+There are `r nrow(mr_data)` observations from Mr. Trash Wheel, `r nrow(prof_data)` observations from Professor Trash Wheel, and `r nrow(gwyn_data)` observations from Gwynnda Trash Wheel. 
 
-## Remaining
+* Gwynndata is missing `sports` and `glass_bottles`. `wrappers` values are missing for many of the rows. There is also one dumpster number listed twice with different data (#21)
 
-Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
+* Professor Trash Wheel doesn't have `sports` column. Professor Trash Wheel has one row missing many of the variables
+
+* These match the combined dataset counts: `r trash_tidy |> filter(name == "mr_trash_wheel") |> nrow()`, `r trash_tidy |> filter(name == "professor_trash_wheel") |> nrow()`, and `r trash_tidy |> filter(name == "gwynnda_trash_wheel") |> nrow()`, respectively. 
+
+* The average number of estimated homes powered overall is `r trash_tidy |> pull(homes_powered) |> mean() |> round(2)`. For each trash wheel, the average is `r trash_tidy |> filter(name == "mr_trash_wheel") |> pull(homes_powered) |> mean() |> round(2)` for Mr. Trash Wheel, `r trash_tidy |> filter(name == "professor_trash_wheel") |> pull(homes_powered) |> mean() |> round(2)` for Professor Trash Wheel, and `r trash_tidy |> filter(name == "gwynnda_trash_wheel") |> pull(homes_powered) |> mean() |> round(2)` for Gwynnda Trash Wheel, 
+
+* The total weight of trash collected by professor trash_wheel is `r trash_tidy |> filter(name == "professor_trash_wheel") |> pull(weight_tons) |> sum()` tons. 
+
+* The total number of cigarette butts collected by Gwynnda in July 2021 is `r trash_tidy |> filter(name == "gwynnda_trash_wheel", month == "July", year == 2021) |> pull(cigarette_butts) |> sum()`
 
 
 
