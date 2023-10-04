@@ -98,15 +98,17 @@ Read and clean the Mr. Trash Wheel sheet:
 * The last row contains sums of the previous so should be excluded. This is the only row where date is missing, so excluding it by filtering out where Month is null. 
 
 ```{r load_trashwheel}
-trashwheel_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
+mr_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
                              sheet = "Mr. Trash Wheel",
                              skip = 1,
                              range = cell_cols("A:N")) |>
   filter(!is.na(Month)) |> 
-  janitor::clean_names()
-skimr::skim(trashwheel_data)
+  janitor::clean_names() |> 
+  mutate(name = "mr_trash_wheel") |> 
+  mutate(year = as.numeric(year))
+#skimr::skim(mr_data)
 
-trashwheel_data
+mr_data
 ```
 
 ## Calculate homes_powered
@@ -118,15 +120,70 @@ The data include a column for the (approximate) number of homes powered. This ca
 ```{r homes_powered}
 kw_per_ton = 500
 kw_per_house = 30
-trashwheel_data = trashwheel_data |>
+mr_data = mr_data |>
   rename(homes_powered_orig = homes_powered) |>
   mutate(homes_powered = (weight_tons * kw_per_ton / kw_per_house))
 ```
 
-*Checking* to see if the calculation looks similar to the original `homes` column. Using only where the homes_powered from original dataset was  calculated, the average number of homes powered is `r trashwheel_data |> filter(homes_powered_orig > 0) |> pull(homes_powered_orig) |> mean() |> round(2)` compared to our calculation, `r pull(trashwheel_data, homes_powered) |> mean() |> round(2)`. These are fairly equivalent. 
+**Checking** to see if the calculation looks similar to the original `homes` column. Using only where the homes_powered from original dataset was  calculated, the average number of homes powered is `r mr_data |> filter(homes_powered_orig > 0) |> pull(homes_powered_orig) |> mean() |> round(2)` compared to our calculation, `r pull(mr_data, homes_powered) |> mean() |> round(2)`. These are fairly equivalent. 
+
+## Professor and Gwynnda Trash Wheels
+
+Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+
+### Load and Clean Professor Trash Wheel
+
+* Professor Trash Wheel doesn't have `sports` column
+* Professor Trash Wheel has one row missing many of the variables
+
+```{r professor}
+prof_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
+                             sheet = "Professor Trash Wheel",
+                             skip = 1,
+                             range = cell_cols("A:M")) |>
+  filter(!is.na(Month)) |> 
+  janitor::clean_names() |> 
+  mutate(homes_powered = (weight_tons * kw_per_ton / kw_per_house)) |> 
+  mutate(name = "professor_trash_wheel")
+#skimr::skim(prof_data)
+
+prof_data
+
+```
+
+### Load and Clean Gwynnda Trash Wheel
+
+* Gwynndata is missing `sports` and `glass_bottles`
+* `wrappers` values are missing for many of the rows
+* Noting also that one dumpster number is listed twice with different data (#21)
+```{r gwynnda}
+gwyn_data = read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
+                             sheet = "Gwynnda Trash Wheel",
+                             skip = 1,
+                             range = cell_cols("A:L")) |>
+  filter(!is.na(Month)) |> 
+  janitor::clean_names() |> 
+  mutate(homes_powered = (weight_tons * kw_per_ton / kw_per_house)) |> 
+  mutate(name = "gwynnda_trash_wheel")
+#skimr::skim(gwyn_data)
+gwyn_data
+```
+
+
+### Combine Data Sets
+```{r bind_trash}
+
+
+trash_tidy = 
+  bind_rows(mr_data, prof_data, gwyn_data) |>
+  select(name, everything())
+head(trash_tidy)
+unique(trash_tidy$name)
+```
+
+
 
 ## Remaining
-Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
 
 Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
 
