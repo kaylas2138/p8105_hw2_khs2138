@@ -7,8 +7,80 @@ output:
     toc: true
 ---
 
-```{r}
+# Problem 1 
+
+```{r load_data}
+library(tidyverse)
 list.files('./data/fivethirtyeight_datasets')
+pols_month = read_csv('./data/fivethirtyeight_datasets/pols-month.csv')
+names(pols_month)
+skimr::skim(pols_month)
+head(pols_month,5)
+```
+
+## Clean pols_month - Without Nesting
+
+Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name.
+
+```{r separate_mon}
+pols_month = separate(pols_month, mon, c("year","month","day"))
+
+mutate(pols_month, month = month.name[as.numeric(month)])
 ```
 
 
+
+## Clean pols_month - with Nesting
+
+Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name.
+
+```{r clean_pols_month_nest}
+pols_month_nest =
+  read_csv('./data/fivethirtyeight_datasets/pols-month.csv') |>
+  separate(mon, c("year","month","day")) |>
+  mutate(month = month.name[as.numeric(month)])
+  
+head(pols_month_nest)
+```
+
+
+## President variable creation
+Create a president variable taking values gop and dem
+
+Exploring prez_gop and prez_dem  
+```{r}
+unique(pull(pols_month, prez_gop))
+unique(pull(pols_month, prez_dem))
+
+# looking at prez_dem values when prez_gop = 2 
+test_prez_gop = filter(pols_month, prez_gop == 1)
+unique(pull(test_prez_gop,prez_dem))
+```
+
+
+```{r}
+x = recode(pols_month$prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")
+```
+
+
+```{r}
+y = recode(pols_month$prez_dem, "1" = "dem", "0" = "gop")
+x == y # are the two approaches equivalent? Yes
+pols_month = mutate(pols_month, president = recode(pols_month$prez_gop, "0" = "dem", "1" = "gop", "2" = "gop"))
+```
+
+
+## Final clean_pols_month
+ Use `separate()` to break up the variable mon into integer variables `year`, `month`, and `day`; replace `month` number with month name; create a `president` variable taking values `gop` and `dem`, and remove `prez_dem` and `prez_gop`; and remove the `day` variable.
+ 
+
+```{r clean_pols_month}
+pols_month =
+  read_csv('./data/fivethirtyeight_datasets/pols-month.csv') |>
+  separate(mon, c("year","month","day")) |>
+  mutate(month = month.name[as.numeric(month)]) |>
+  mutate(president = recode(pols_month$prez_dem, "1" = "dem", "0" = "gop")) |>
+  select(-prez_dem,-prez_gop, - day)
+  
+head(pols_month)
+```
